@@ -1,0 +1,53 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 6c04bd86a35d4f159fcfb88d9fa413a1
+      name: Templates/Applications
+  templates:
+    - uuid: d6e7ce38ff5045f894c731c8e45b686d
+      template: 'OpenPBS node status by Zabbix agent'
+      name: 'OpenPBS node status by Zabbix agent'
+      description: 'Discovers problem nodes reported by pbsnodes -l.'
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: 28cd340f5d9b4ab5aa7f28fecc677b33
+          name: 'OpenPBS: Problem node count'
+          key: openpbs.node.problem.count
+          delay: 1m
+          history: 30d
+          trends: 365d
+      discovery_rules:
+        - uuid: e2b10e74404d40e68f51872137c302fa
+          name: 'OpenPBS: Problem node discovery'
+          key: openpbs.node.discovery
+          delay: 1m
+          lifetime: 1d
+          item_prototypes:
+            - uuid: 67485820c29042438acff48b94c107a1
+              name: 'OpenPBS: {#PBSNODE}: Problem status'
+              key: 'openpbs.node.problem[{#PBSNODE}]'
+              delay: 1m
+              history: 30d
+              trends: 365d
+              trigger_prototypes:
+                - uuid: 8af7840d8c86426fbd32ee858a38ce72
+                  expression: 'last(/OpenPBS node status by Zabbix agent/openpbs.node.problem[{#PBSNODE}])=1'
+                  name: 'OpenPBS: Node {#PBSNODE} is {#PBSSTATE}'
+                  priority: HIGH
+                  tags:
+                    - tag: component
+                      value: node
+                    - tag: node
+                      value: '{#PBSNODE}'
+            - uuid: a93c6e79618641b68897001f5b6f2290
+              name: 'OpenPBS: {#PBSNODE}: State'
+              key: 'openpbs.node.state[{#PBSNODE}]'
+              delay: 1m
+              history: 30d
+              trends: '0'
+              value_type: CHAR
+      tags:
+        - tag: target
+          value: openpbs
+

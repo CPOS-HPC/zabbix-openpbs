@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PBSNODES=${PBSNODES:-/opt/pbs/bin/pbsnodes}
+CACHE_TTL=${CACHE_TTL:-45}
+CACHE_DIR=${CACHE_DIR:-${TMPDIR:-/tmp}/zabbix-openpbs-${UID}}
+CACHE_FILE=${CACHE_DIR}/problem-nodes
+LOCK_FILE=${CACHE_DIR}/refresh.lock
+
+usage() {
+    cat <<'EOF'
+Usage: zabbix-openpbs COMMAND [NODE]
+
+Commands:
+  discovery       Print Zabbix discovery JSON for problem nodes
+  count           Print the number of problem nodes
+  problem NODE    Print 1 if NODE has a problem, otherwise 0
+  state NODE      Print NODE's problem state, otherwise healthy
+EOF
+}
+
+refresh_cache() {
+    local now modified temporary
+
+    mkdir -p -m 0700 "$CACHE_DIR"
+    exec 9>"$LOCK_FILE"
+    flock 9
+
+    now=$(date +%s)
+    if [[ -e "$CACHE_FILE" ]]; then
+        modified=$(stat -c %Y "$CACHE_FILE")
+        if (( now - modified < CACHE_TTL )); then
+            return
+        fi
+    fi
+
+    temporary=$(mktemp "${CACHE_DIR}/problem-nodes.XXXXXX")
+    if "$PBSNODES" -l >"$temporary"; then
+        mv -f "$temporary" "$CACHE_FILE"
+    else
+        rm -f "$temporary"
+        return 1
+    fi
+}
+
+discovery() {
+    local first=1 node state remainder
+
+    printf '{"data":['
+    while read -r node state remainder; do
+        [[ -n "${node:-}" && -n "${state:-}" ]] || continue
+        [[ "$node" =~ ^[A-Za-z0-9._-]+$ ]] || continue
+        [[ "$state" =~ ^[A-Za-z0-9,_-]+$ ]] || continue
+        (( first )) || printf ','
+        printf '{"{#PBSNODE}":"%s","{#PBSSTATE}":"%s"}' "$node" "$state"
+        first=0
+    done <"$CACHE_FILE"
+    printf ']}\n'
+}
+
+node_problem() {
+    awk -v target="$1" '$1 == target { found=1 } END { print found ? 1 : 0 }' "$CACHE_FILE"
+}
+
+node_state() {
+    awk -v target="$1" '
+        $1 == target { print $2; found=1; exit }
+        END { if (!found) print "healthy" }
+    ' "$CACHE_FILE"
+}
+
+main() {
+    local command=${1:-}
+
+    case "$command" in
+        discovery)
+            refresh_cache
+            discovery
+            ;;
+        count)
+            refresh_cache
+            awk 'NF >= 2 { count++ } END { print count + 0 }' "$CACHE_FILE"
+            ;;
+        problem)
+            [[ $# -eq 2 ]] || { usage >&2; return 2; }
+            refresh_cache
+            node_problem "$2"
+            ;;
+        state)
+            [[ $# -eq 2 ]] || { usage >&2; return 2; }
+            refresh_cache
+            node_state "$2"
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            usage >&2
+            return 2
+            ;;
+    esac
+}
+
+main "$@"
+
