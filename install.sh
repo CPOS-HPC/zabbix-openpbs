@@ -16,5 +16,7 @@ install -m 0644 "$ROOT_DIR/zabbix-openpbs.conf" "$CONF_DIR/zabbix-openpbs.conf"
 
 echo "Installed $SCRIPT_DIR/zabbix-openpbs"
 echo "Installed $CONF_DIR/zabbix-openpbs.conf"
-echo "Restart zabbix-agent2 to load the configuration."
-
+echo
+echo "IMPORTANT: Restart zabbix-agent2 to activate this installation:"
+echo "  sudo systemctl restart zabbix-agent2"
+echo "The new OpenPBS checks will not work until the service is restarted."
