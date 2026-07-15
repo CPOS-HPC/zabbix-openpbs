@@ -35,6 +35,7 @@ zabbix_export:
                   expression: 'last(/OpenPBS node status by Zabbix agent/openpbs.node.problem[{#PBSNODE}])=1'
                   name: 'OpenPBS: Node {#PBSNODE} is {#PBSSTATE}'
                   priority: HIGH
+                  manual_close: YES
                   tags:
                     - tag: component
                       value: node
@@ -50,4 +51,3 @@ zabbix_export:
       tags:
         - tag: target
           value: openpbs
-
