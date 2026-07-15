@@ -11,11 +11,10 @@ Zabbix item from running another PBS query.
 
 ```bash
 sudo ./install.sh
-sudo systemctl restart zabbix-agent2
 ```
 
-> **Required:** Restart `zabbix-agent2` after installation. The new OpenPBS
-> checks will not be loaded until the service is restarted.
+The installer restarts `zabbix-agent2` automatically so the new checks are
+available immediately.
 
 The installer copies the files to:
 
