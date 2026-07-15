@@ -10,10 +10,15 @@ Zabbix item from running another PBS query.
 ## Install
 
 ```bash
-sudo install -m 0755 zabbix-openpbs /usr/local/bin/zabbix-openpbs
-sudo install -m 0644 zabbix-openpbs.conf \
-  /etc/zabbix/zabbix_agent2.d/zabbix-openpbs.conf
+sudo ./install.sh
 sudo systemctl restart zabbix-agent2
+```
+
+The installer copies the files to:
+
+```text
+/etc/zabbix/scripts/zabbix-openpbs
+/etc/zabbix/zabbix_agent2.d/zabbix-openpbs.conf
 ```
 
 Import `zabbix-openpbs.yaml` into Zabbix and link **OpenPBS node status by
@@ -31,7 +36,7 @@ CACHE_DIR=/tmp/zabbix-openpbs-<uid>
 ## Verify
 
 ```bash
-/usr/local/bin/zabbix-openpbs discovery
+/etc/zabbix/scripts/zabbix-openpbs discovery
 zabbix_agent2 -t openpbs.node.problem.count
 zabbix_agent2 -t openpbs.node.discovery
 ```
@@ -41,4 +46,3 @@ zabbix_agent2 -t openpbs.node.discovery
 ```bash
 ./tests/test.sh
 ```
-
